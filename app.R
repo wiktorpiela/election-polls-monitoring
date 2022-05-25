@@ -3,7 +3,7 @@ library("shiny")
 library("plotly")
 library("shinyBS")
 library("googlesheets4")
-setwd("C:/Users/wpiel/OneDrive/Desktop/election_poll_monitoring")
+
 source("func.R")
 
 gs4_auth("rprogrammer97@gmail.com")
