@@ -12,5 +12,6 @@ req_packages <- c("googlesheets4","shinyBS","tidyverse","shiny","plotly","rvest"
 new_packages <- req_packages[!(req_packages %in% installed.packages()[,"Package"])]
 if(length(new_packages)) install.packages(new_packages)
 
+shiny::runGitHub("election-polls-monitoring","wiktorpiela")
 ```
 
