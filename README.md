@@ -1,7 +1,7 @@
 # election-polls-monitoring
 The app of strong web scraping background.
 
-To run app on browser, clkick below link:
+To run app on browser, click below link:
 
 https://wpiela.shinyapps.io/election_poll_monitoring/
 
