@@ -3,7 +3,9 @@ library("shiny")
 library("plotly")
 library("shinyBS")
 library("googlesheets4")
-
+library("kableExtra")
+library("shinysurveys")
+setwd("~/Shiny/my_apps/election_poll_monitoring")
 source("func.R")
 
 gs4_auth("rprogrammer97@gmail.com")
@@ -165,10 +167,33 @@ ui <- fluidPage(
                                              tableOutput("urls")))
                             )
                           ),
-                          mainPanel())
+                          
+                          mainPanel(
+                            
+                            tabsetPanel(
+                              
+                              id = "tabset3",
+                              type = "hidden",
+                              
+                              tabPanel("Polls", tableOutput("poll_table")),
+                              
+                              tabPanel("Average polls results", tableOutput("poll_table2")),
+                              
+                              tabPanel("Last parliamentary election result")
+                              
+                            )
+                            
+                            
+                          ))
                ),
   
-              tabPanel("Survey"),
+              tabPanel("Survey",
+                       
+                       surveyOutput(df = bind_rows(first_q,second_q,third_q,fourth_q),
+                                    survey_title = "Own election poll",
+                                    survey_description = "Share your vote!")
+                       
+                       ),
                
                navbarMenu("More",
                           
@@ -272,6 +297,13 @@ server <- function(input, output, session){
     
     })
   
+  observeEvent(input$tabset1, {
+    
+    updateTabsetPanel(inputId = "tabset3",
+                      selected = input$tabset1)
+    
+  })
+  
   
   party_plot <- reactive({
     
@@ -365,6 +397,51 @@ server <- function(input, output, session){
     
   })
   
+  react_poll_table <- reactive({
+    
+    req(input$creators)
+    req(input$partys)
+
+    x <- poll_data %>% 
+      filter(dates<=max(input$date) & dates>=min(input$date),
+             creator%in%input$creators,
+             party%in%input$partys) %>%
+      mutate(value = replace(value, is.na(value),"no data")) %>% 
+      pivot_wider(names_from = party,
+                  values_from = value,
+                  values_fn = list)
+    
+    x %>% 
+      unnest(cols = 2:ncol(x)) %>% 
+      arrange(desc(dates)) %>% 
+      mutate(dates = as.character(dates),
+             across(3:ncol(x), ~ ifelse(. == "no data","",paste(.,"%")))) %>% 
+      rename(date = "dates")
+  })
+  
+  
+  react_poll_table2 <- reactive({
+    
+    req(input$creators)
+    req(input$partys)
+
+     x <- get_avg_polls(poll_data) %>%
+       arrange(match(party, c("LEWICA","KO","POLSKA 2050","PSL","PiS","KONFEDERACJA"))) %>% 
+       filter(dates<=max(input$date) & dates>=min(input$date),
+              party%in%input$partys1) %>%
+       mutate(avg = round(avg,2),
+              avg = replace(avg, is.na(avg), "no data")) %>% 
+       pivot_wider(names_from = party,
+                   values_from = avg,
+                   values_fn = list) %>% 
+       arrange(desc(dates))
+     
+     x %>% 
+       mutate(dates = as.character(dates),
+              across(2:ncol(x), ~ ifelse(.=="no data","",paste(.,"%")))) %>%
+       rename(date = "dates")
+
+  })
   
   data_save <- reactive({
     
@@ -422,13 +499,13 @@ server <- function(input, output, session){
   output$info <- renderText({
   
     str1 <- "1. The host of ewybory.eu stores poll results on the website as HTML table with data"
-    str2 <- "2. Scraping algorithm takes all data from HTML table (including hyperlinks) and convert
+    str2 <- "2. Scraping algorithm takes all data from HTML table (including hyperlinks) and converts
     into readable by R data frame in R-environment"
     str3 <- "3. Then some data cleaning and processing is performing"
-    str4 <- "4. In the next step the same algorithm store prepared data in Google Sheets"
-    str5 <- "5. The Election poll monitoring app imports information from source and present the results
+    str4 <- "4. In the next step the same algorithm stores prepared data in Google Sheets"
+    str5 <- "5. The Election poll monitoring app imports information from source and presents the results
     on plots and files available to download by user"
-    str6 <- "6. In case of any updates on hosts website - the algorithm just repeates steps for 1 to 4 and overwrite dataset in sheets"
+    str6 <- "6. In case of any updates on hosts website - the algorithm just repeates steps for 1 to 4 and overwrites dataset in sheets"
 
     HTML(paste(str1, str2,str3,str4,str5,str6 ,sep = '</br></br>'))
     
@@ -439,7 +516,7 @@ server <- function(input, output, session){
   output$info2 <- renderText({
     
     str1 <- "web scraping, R programming, Shiny web app development, data processing, data storage, automation"
-    str2 <- "packages: Shiny, rvest, tidyverse family packages, googlesheets4, plotly, shinyBS"
+    str2 <- "packages: Shiny, rvest, tidyverse family packages, googlesheets4, plotly, shinyBS, kableExta"
     str3 <- "some functionalitites exhanced by pure HTML, CSS and JS"
    
     HTML(paste(str1, str2,str3,sep = '</br></br>'))
@@ -447,6 +524,24 @@ server <- function(input, output, session){
     
     
   })
+  
+  output$poll_table <- function(){
+    
+    react_poll_table() %>% 
+      kable() %>% 
+      kable_styling(c("striped","hover")) %>% 
+      scroll_box(height = "300px")
+    
+  }
+  
+  output$poll_table2 <- function(){
+    
+    react_poll_table2() %>% 
+      kable() %>% 
+      kable_styling(c("striped","hover")) %>% 
+      scroll_box(height = "300px")
+
+  }
                          
   output$party_plot <- renderPlotly(party_plotly())
   
@@ -467,7 +562,16 @@ server <- function(input, output, session){
       mutate(dates = as.character(dates))
     
   }, sanitize.text.function = function(x) x)
+  
+  renderSurvey()
+  
+  observeEvent(input$submit, {
+    showModal(modalDialog(
+      title = "Thanks for your time and providing the answers!",
+      "Your input has been gathered and stored!"
+    ))
+  })
     
 }
 
-shinyApp(ui, server)
+shinyApp(ui, server) 
