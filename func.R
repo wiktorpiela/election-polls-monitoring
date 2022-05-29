@@ -2,6 +2,7 @@ library("tidyverse")
 library("shiny")
 library("rvest")
 library("googlesheets4")
+library("shinysurveys")
 
 get_avg_polls <- function(df){
   
@@ -129,3 +130,53 @@ draw_avg_party_plot_fit <- function(df){
   return(df)
   
 }
+
+first_q <- data.frame(
+  question = "What's your age?",
+  option = NA,
+  input_type = "slider",
+  input_id = "year_scale",
+  dependence = NA,
+  dependence_value = NA,
+  required = TRUE
+)
+
+second_q <- data.frame(
+  question = rep("What's your gender?",3),
+  option = c("Male","Female","Prefer not to say"),
+  input_type = rep("mc",3),
+  input_id = rep("gender",3),
+  dependence = rep(NA,3),
+  dependence_value = rep(NA,3),
+  required = rep(TRUE,3)
+)
+
+third_q <- data.frame(
+  question = rep("Your education level?",5),
+  option = c("Primary education","Secondary education","Bachelor degree","Master degree","PhD"),
+  input_type = rep("mc",5),
+  input_id = rep("education",5),
+  dependence = rep(NA,5),
+  dependence_value = rep(NA,5),
+  required = rep(TRUE,5)
+)
+
+fourth_q <- data.frame(
+  question = rep("Which party would you vote for?",8),
+  option = c("LEWICA","KO (Civic Platform)","POLSKA 2050","PSL","PiS","KONFEDERACJA","None of above","I don't vote"),
+  input_type = rep("mc",8),
+  input_id = rep("party",8),
+  dependence = rep(NA,8),
+  dependence_value = rep(NA,8),
+  required = rep(TRUE,8)
+)
+
+extendInputType(input_type = "slider", {
+  shiny::sliderInput(
+    inputId = surveyID(),
+    label = surveyLabel(),
+    min = 18,
+    max = 100,
+    value = 25
+  ) 
+})
