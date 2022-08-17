@@ -1,5 +1,5 @@
 # election-polls-monitoring
-The app of strong web scraping background.
+The app based on web scraping background.
 
 To run app on browser, click below link:
 
